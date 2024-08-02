@@ -171,6 +171,16 @@ $tabs = ['shortcode' => __('Shortcode', 'oes'), 'shortcode_editor' => __('Editor
                 _e('<code>height</code>: Set the map height (for css % or px). Default is 500px.', 'oes');
                 ?></p>
         </div>
+        <div class="oes-configuration-header">
+            <h2><?php _e('Notice', 'oes'); ?></h2>
+        </div>
+        <p><?php
+            _e('If you want to use the map shortcode outside of post content data (e.g. inside a theme template ' .
+                'file) try to avoid putting the shortcode inside a shortcode block and use plain HTML notation. ' .
+                'The shortcode block uses the wpautop function and may break up the code outside of post content.',
+                'oes');
+            ?>
+        </p>
     <?php
     endif; ?>
 </div>

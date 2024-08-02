@@ -143,9 +143,9 @@ function get_HTML_representation(array $args = []): string
     else $mapArgs['fitBounds'] = true;
 
     /* check for center */
-    if(isset($args['center']) && !empty($args['center'])){
+    if (isset($args['center']) && !empty($args['center'])) {
         $splitCenter = explode(';', $args['center']);
-        if(sizeof($splitCenter) > 1){
+        if (sizeof($splitCenter) > 1) {
             $mapArgs['defaultCenter'] = [$splitCenter[0], $splitCenter[1]];
         }
     }
@@ -215,7 +215,7 @@ function theme_archive_list(): void
  */
 function enqueue_scripts(): void
 {
-    if(has_map_shortcode()) enqueue_map_scripts();
+    if (has_map_shortcode()) enqueue_map_scripts();
 }
 
 
@@ -226,26 +226,26 @@ function enqueue_map_scripts(): void
 {
     $path = plugins_url(basename(__DIR__)) . '/../oes-map/assets/';
 
-        wp_register_style('oes-map.leaflet', $path . 'leaflet/1.9.4/leaflet.css', [], '1.9.4', 'screen');
-        wp_enqueue_style('oes-map.leaflet');
+    wp_register_style('oes-map.leaflet', $path . 'leaflet/1.9.4/leaflet.css', [], '1.9.4', 'screen');
+    wp_enqueue_style('oes-map.leaflet');
 
-        wp_register_style('oes-map.leaflet.panel-layers', $path . 'leaflet/leaflet-panel-layers/leaflet-panel-layers.min.css', [], '1.2.6', 'screen');
-        wp_enqueue_style('oes-map.leaflet.panel-layers');
+    wp_register_style('oes-map.leaflet.panel-layers', $path . 'leaflet/leaflet-panel-layers/leaflet-panel-layers.min.css', [], '1.2.6', 'screen');
+    wp_enqueue_style('oes-map.leaflet.panel-layers');
 
-        wp_register_script('oes-map.leaflet', $path . 'leaflet/1.9.4/leaflet.js', [], '1.9.4', true);
-        wp_enqueue_script('oes-map.leaflet');
+    wp_register_script('oes-map.leaflet', $path . 'leaflet/1.9.4/leaflet.js', [], '1.9.4', true);
+    wp_enqueue_script('oes-map.leaflet');
 
-        wp_register_script('oes-map.leaflet.panel-layers', $path . 'leaflet/leaflet-panel-layers/leaflet-panel-layers.min.js', ['oes-map.leaflet'], '1.2.6');
-        wp_enqueue_script('oes-map.leaflet.panel-layers');
+    wp_register_script('oes-map.leaflet.panel-layers', $path . 'leaflet/leaflet-panel-layers/leaflet-panel-layers.min.js', ['oes-map.leaflet'], '1.2.6');
+    wp_enqueue_script('oes-map.leaflet.panel-layers');
 
-        /* @oesDevelopment more styles, e.g. clustering link in EV */
-        wp_register_script('oes-map.simplemap', $path . 'leaflet/leaflet.cedis.simplemap/leaflet.cedis.simplemap.min.js');
-        wp_enqueue_script('oes-map.simplemap');
-        wp_register_style('oes-map.simplemap', $path . 'leaflet/leaflet.cedis.simplemap/leaflet.cedis.simplemap.css');
-        wp_enqueue_style('oes-map.simplemap');
+    /* @oesDevelopment more styles, e.g. clustering link in EV */
+    wp_register_script('oes-map.simplemap', $path . 'leaflet/leaflet.cedis.simplemap/leaflet.cedis.simplemap.min.js');
+    wp_enqueue_script('oes-map.simplemap');
+    wp_register_style('oes-map.simplemap', $path . 'leaflet/leaflet.cedis.simplemap/leaflet.cedis.simplemap.css');
+    wp_enqueue_style('oes-map.simplemap');
 
-        wp_register_script('oes-map', $path . 'js/oes-map.min.js', [], false, true);
-        wp_enqueue_script('oes-map');
+    wp_register_script('oes-map', $path . 'js/oes-map.min.js', [], false, true);
+    wp_enqueue_script('oes-map');
 }
 
 
@@ -256,8 +256,8 @@ function enqueue_map_scripts(): void
  */
 function has_map_shortcode(): bool
 {
-    global $post;
-    return $post && has_shortcode($post->post_content, 'oes_map');
+    global $post, $oes_map_data;
+    return ($post && has_shortcode($post->post_content, 'oes_map')) || $oes_map_data;
 }
 
 
@@ -306,9 +306,9 @@ function legend_html($args): string
     global $oes_language, $oes_map_categories;
     $filterItems = [];
     $allIconsHtml = '';
-    foreach($oes_map_categories[$mapID] ?? [] as $postType => $categoryData)
-        foreach($categoryData as $key => $singleCategory) {
-            $iconHTML = get_category_icon($singleCategory['color'] ?? '#111111') ;
+    foreach ($oes_map_categories[$mapID] ?? [] as $postType => $categoryData)
+        foreach ($categoryData as $key => $singleCategory) {
+            $iconHTML = get_category_icon($singleCategory['color'] ?? '#111111');
             $allIconsHtml .= $iconHTML;
             $filterItems[] = '<a href="#" id="' . $mapID . '_' . $key .
                 '" onclick="oesMapExternalLegend(\'' . $mapID . '\',\'' . $key . '\');">' .
