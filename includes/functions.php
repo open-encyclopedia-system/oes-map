@@ -2,176 +2,48 @@
 
 namespace OES\Map;
 
-
 /**
- * Display map.
+ * Display a dynamic frontend map based on provided arguments.
  *
- * @param array $args The map arguments.
- * @return string The map.
+ * This function collects post IDs based on either a list or post type, organizes them by category,
+ * instantiates map entries for each post, filters and formats them, and then returns the final HTML representation.
+ *
+ * @param array $args {
+ *     Optional. Arguments to control the behavior and appearance of the map.
+ *
+ * @type array|string $ids Array or comma-separated string of post IDs to include.
+ * @type string $post_type Post type to query if IDs are not provided.
+ * @type array $categories Array of category configurations keyed by category index.
+ * @type string $lat_field ACF field key for latitude (used per category).
+ * @type string $lon_field ACF field key for longitude.
+ * @type string $google_field ACF Google Map field key (fallback).
+ * @type string $popup_function Callback for generating popup content.
+ * @type string $popup_field ACF field key for popup content.
+ * @type string $popup_text Default popup text.
+ * @type string $color Marker color.
+ * @type string $title Category title.
+ * }
+ *
+ * @return string The rendered HTML of the map or empty string if in admin.
  */
 function html(array $args): string
 {
-    if (is_admin()) return '';
-
-    //@oesDevelopment: use global $oes_archive_data for archive display.
-    /* get posts */
-    if (empty($args['ids'] ?? false)) {
-        if (empty($args['post_type'] ?? false)) return '';
-        else $ids = oes_get_wp_query_posts(['post_type' => $args['post_type'], 'fields' => 'ids']);
-    } else {
-        if ($args['ids'] == 'this') $ids[] = get_the_ID();
-        else $ids = is_array($args['ids']) ? $args['ids'] : explode(',', $args['ids']);
+    if (is_admin()) {
+        return '';
     }
 
+    $class = oes_get_project_class_name('\OES\Map\Map', '\OES\Map');
+    $oesMap = new $class($args);
 
-    /* sort posts into categories */
-    $categories = [];
-    $layerCategories = [];
-    $data = [];
-    foreach ($ids as $singlePostID) {
-
-        /* get post object */
-        $singlePost = get_post($singlePostID);
-        if (!$singlePost) continue;
-        $singlePostType = $singlePost->post_type;
-
-        if (empty($categories[$singlePostType] ?? '')) {
-
-            /* category by shortcode */
-            $i = 1;
-            while (isset($args['cat' . $i]) || isset($args['categories'][$i])) {
-
-                $shortcode = isset($args['cat' . $i]);
-                $parameterArray = $shortcode ?
-                    explode(';', $args['cat' . $i]) :
-                    $args['categories'][$i];
-
-                foreach ([
-                             'lat_field',
-                             'lon_field',
-                             'google_field',
-                             'condition_field',
-                             'condition_operator',
-                             'condition_value',
-                             'popup_function',
-                             'popup_field',
-                             'popup_text',
-                             'color',
-                             'title'] as $position => $parameterKey) {
-                    if (in_array($parameterKey, ['condition_field', 'condition_operator', 'condition_value']))
-                        $categories[$singlePostType]['cat' . $i]['condition'][$parameterKey] = $parameterArray[$parameterKey] ??
-                            ($parameterArray[$position] ?? '');
-                    else
-                        $categories[$singlePostType]['cat' . $i][$parameterKey] = $parameterArray[$parameterKey] ??
-                            ($parameterArray[$position] ?? '');
-                }
-
-                $i++;
-            }
-        }
-
-
-        /**
-         * Filters the map categories.
-         *
-         * @param array $categories The categories.
-         * @param array $args The additional parameter.
-         */
-        $categories = apply_filters('oes_map/categories', $categories, $args);
-
-
-        /* loop through entries and collect data */
-        foreach ($categories[$singlePostType] as $key => $categoryData) {
-
-            /* get data for entry from post */
-            $entry = new Entry($singlePostID, $categoryData);
-            if ($entry->status !== 'invalid') {
-                $data[$key]['data'][] = $entry;
-                if (!isset($data[$key]['title'])) $data[$key]['title'] = $categoryData['title'] ?? 'Missing title';
-
-                /* option layer category (can be passed by filter) */
-                if (isset($categoryData['layer_category']) && !in_array($categoryData['layer_category'], $layerCategories))
-                    $layerCategories[] = $categoryData['layer_category'];
-            }
-        }
-    }
-
-    /* add to global parameter */
-    global $oes_map_categories, $oes_map_id;
-    $oes_map_id++;
-    $oes_map_categories['oes_map_' . $oes_map_id] = $categories;
-
-    /* add optional layer files @oesDevelopment mae available in shortcode */
-    if (isset($layerCategories)) $args['layer_files'] = get_layer_files($layerCategories);
-
-    global $oes_map_data;
+    // Update global state with map categories and ID
+    global $oes_map_categories, $oes_map_data;
+    $mapId = $oesMap->map_ID;
+    $oes_map_categories[$mapId] = $oesMap->categories;
     $oes_map_data = true;
-    return get_HTML_representation(array_merge([
-        'map_id' => 'oes_map_' . $oes_map_id,
-        'data' => $data
-    ], $args));
+
+    // Return the final HTML map representation
+    return $oesMap->get_map_div();
 }
-
-
-/**
- * Get the map representation of posts.
- *
- * @param array $args The map arguments. Valid options are:
- *  data            :   The map data
- *  container-class :   The container class
- *  map_id          :   The map id
- *  width           :   The map width
- *  height          :   The map height
- *  legend          :   Indicates, if legend is to be included
- *  defaultzoom     :   The default zoom level. If not set, the zoomlevel is calculated to fit all markers.
- *  center          :   The map center position.
- * @return string Return the map representation.
- */
-function get_HTML_representation(array $args = []): string
-{
-    /* prepare args */
-    $mapArgs = [
-        'showLegend' => (isset($args['show_legend']) && in_array($args['show_legend'], ['true', 'on', '1'])),
-        'controlsCollapsed' => $args['controls_collapsed'] ?? false,
-        'map_id' => $args['map_id'],
-        'layer_files' => $args['layer_files'] ?? [],
-        'legendLabelType' => $args['legend_text'] ?? ''
-    ];
-
-    /* check for zoom */
-    if (isset($args['defaultzoom']) && is_numeric($args['defaultzoom'])) $mapArgs['defaultZoom'] = $args['defaultzoom'];
-    else $mapArgs['fitBounds'] = true;
-
-    /* check for center */
-    if (isset($args['center']) && !empty($args['center'])) {
-        $splitCenter = explode(';', $args['center']);
-        if (sizeof($splitCenter) > 1) {
-            $mapArgs['defaultCenter'] = [$splitCenter[0], $splitCenter[1]];
-        }
-    }
-
-
-    /**
-     * Filters the map arguments.
-     *
-     * @param array $mapArgs The map arguments.
-     * @param array $args The additional parameter.
-     */
-    $mapArgs = apply_filters('oes_map/map_args', $mapArgs, $args);
-
-
-    /* prepare data */
-    if (isset($args['data']))
-        return sprintf('<div class="%s"><div id="%s" style="width: %s; height: %s;"></div></div>',
-                $args['container-class'] ?? 'oes-map-container',
-                $args['map_id'] ?? 'map',
-                $args['width'] ?? '100%',
-                $args['height'] ?? '500px'
-            ) .
-            '<script>oesMap.init("' . ($args['map_id'] ?? 'map') . '",' . json_encode($args['data']) . ',' . json_encode($mapArgs) . ');</script>';
-    else return '';
-}
-
 
 /**
  * Get default popup text for map entry.
@@ -189,65 +61,47 @@ function popup_text($post_id, string $text = ''): string
     );
 }
 
-
-/**
- * Replace archive list by map.
- */
-function theme_archive_list(): void
-{
-
-    global $post_type;
-
-    /* check if current post type is to be replaced by map */
-    $args = \OES\Shortcode\prepare_shortcode_parameters_from_option('oes_shortcode-map-' . $post_type);
-
-    /* replace archive by shortcode */
-    global $oes_archive_displayed;
-    if (!empty($args)) {
-        echo html($args);
-        $oes_archive_displayed = true;
-    }
-}
-
-
 /**
  * Include assets if page contains map shortcode.
  */
 function enqueue_scripts(): void
 {
-    if (has_map_shortcode()) enqueue_map_scripts();
+    if (has_map_shortcode()) {
+        enqueue_map_scripts();
+    }
 }
-
 
 /**
  * Include assets necessary to display map.
  */
 function enqueue_map_scripts(): void
 {
-    $path = plugins_url(basename(__DIR__)) . '/../oes-map/assets/';
 
-    wp_register_style('oes-map.leaflet', $path . 'leaflet/1.9.4/leaflet.css', [], '1.9.4', 'screen');
-    wp_enqueue_style('oes-map.leaflet');
+    // Scripts
 
-    wp_register_style('oes-map.leaflet.panel-layers', $path . 'leaflet/leaflet-panel-layers/leaflet-panel-layers.min.css', [], '1.2.6', 'screen');
-    wp_enqueue_style('oes-map.leaflet.panel-layers');
+    wp_register_script('leaflet', OES_MAP_PLUGIN_URL . 'leaflet/1.9.4/leaflet.js', [], '1.9.4', true);
+    wp_enqueue_script('leaflet');
 
-    wp_register_script('oes-map.leaflet', $path . 'leaflet/1.9.4/leaflet.js', [], '1.9.4', true);
+    wp_register_script('leaflet.panel-layers', OES_MAP_PLUGIN_URL . 'leaflet/leaflet-panel-layers/leaflet-panel-layers.min.js', ['leaflet'], '1.2.6');
+    wp_enqueue_script('leaflet.panel-layers');
+
+    wp_register_script('oes-map.leaflet', OES_MAP_PLUGIN_URL . 'assets/js/leaflet.js');
     wp_enqueue_script('oes-map.leaflet');
 
-    wp_register_script('oes-map.leaflet.panel-layers', $path . 'leaflet/leaflet-panel-layers/leaflet-panel-layers.min.js', ['oes-map.leaflet'], '1.2.6');
-    wp_enqueue_script('oes-map.leaflet.panel-layers');
-
-    /* @oesDevelopment more styles, e.g. clustering link in EV */
-    wp_register_script('oes-map.simplemap', $path . 'leaflet/leaflet.cedis.simplemap/leaflet.cedis.simplemap.min.js');
-    wp_enqueue_script('oes-map.simplemap');
-    wp_register_style('oes-map.simplemap', $path . 'leaflet/leaflet.cedis.simplemap/leaflet.cedis.simplemap.css');
-    wp_enqueue_style('oes-map.simplemap');
-
-    wp_register_script('oes-map', $path . 'js/oes-map.min.js', [], false, true);
+    wp_register_script('oes-map', OES_MAP_PLUGIN_URL . 'assets/js/map.min.js', [], false, true);
     wp_enqueue_script('oes-map');
-}
 
+    // Styles
+
+    wp_register_style('leaflet', OES_MAP_PLUGIN_URL . 'leaflet/1.9.4/leaflet.css', [], '1.9.4', 'screen');
+    wp_enqueue_style('leaflet');
+
+    wp_register_style('leaflet.panel-layers', OES_MAP_PLUGIN_URL . 'leaflet/leaflet-panel-layers/leaflet-panel-layers.min.css', [], '1.2.6', 'screen');
+    wp_enqueue_style('leaflet.panel-layers');
+
+    wp_register_style('oes-map', OES_MAP_PLUGIN_URL . 'assets/css/map.css');
+    wp_enqueue_style('oes-map');
+}
 
 /**
  * Determine if page include map shortcode.
@@ -260,71 +114,70 @@ function has_map_shortcode(): bool
     return ($post && has_shortcode($post->post_content, 'oes_map')) || $oes_map_data;
 }
 
-
 /**
- * Get layer files (they must be stored in media archive).
+ * Generate HTML for an external legend tied to an OES map.
  *
- * @param array $categories
- * @return array Return layer files.
- */
-function get_layer_files(array $categories = []): array
-{
-    /* get attachments */
-    $attachments = oes_get_wp_query_posts([
-        'post_type' => 'attachment',
-        'post_status' => 'inherit',
-        'meta_key' => 'layer_category',
-        'meta_value' => $categories,
-        'meta_compare' => 'IN'
-    ]);
-
-    $files = [];
-    foreach ($attachments as $attachment)
-        $files[] = [
-            'id' => $attachment->ID,
-            'url' => wp_get_attachment_url($attachment->ID),
-            'name' => $attachment->post_title
-        ];
-
-    return $files;
-}
-
-
-/**
- * Add an external legend for an OES map.
+ * This legend allows users to toggle map categories from outside the map container.
  *
- * @param array $args Additional arguments, optionally containing the map ID.
- * @return string
+ * @param array $args {
+ *     Optional. Additional arguments.
+ *
+ *     @type string $id The map ID. Defaults to 'oes_map_1'.
+ * }
+ * @return string The HTML output for the external legend.
  */
-function legend_html($args): string
+function legend_html(array $args = []): string
 {
-
-    /* get map ID */
+    // Determine map ID
     $mapID = $args['id'] ?? 'oes_map_1';
 
-    /* loop through categories */
+    // Get global categories for this map
     global $oes_language, $oes_map_categories;
-    $filterItems = [];
+
+    $categories = $oes_map_categories[$mapID] ?? [];
+    if (empty($categories)) {
+        return ''; // No legend output if no categories exist
+    }
+
+    // Legend HTML containers
+    $legendItems = [];
     $allIconsHtml = '';
-    foreach ($oes_map_categories[$mapID] ?? [] as $postType => $categoryData)
-        foreach ($categoryData as $key => $singleCategory) {
-            $iconHTML = get_category_icon($singleCategory['color'] ?? '#111111');
-            $allIconsHtml .= $iconHTML;
-            $filterItems[] = '<a href="#" id="' . $mapID . '_' . $key .
-                '" onclick="oesMapExternalLegend(\'' . $mapID . '\',\'' . $key . '\');">' .
-                $singleCategory['title'] . ' ' . $iconHTML .
-                '</a>';
-        }
 
-    return '<div class="oes-map-legend">' .
-        '<ul class="oes-vertical-list"><li>' .
-        '<a href="#" id="' . $mapID . '__all" onclick="oesMapExternalLegend(\'' . $mapID . '\',\'all\');">' .
-        (OES()->theme_labels['archive__filter__all_button'][$oes_language] ?? 'All ') . ' ' . $allIconsHtml .
-        '</a></li>' .
-        implode('</li><li>', $filterItems) .
-        '</ul></div>';
+    foreach ($categories as $key => $singleCategory) {
+        $color = $singleCategory['color'] ?? '#111111';
+        $iconHTML = get_category_icon($color);
+        $title = $singleCategory['title'] ?? $key;
+
+        // Append to full icon row for "All" toggle
+        $allIconsHtml .= $iconHTML;
+
+        // Individual category legend item
+        $legendItems[] = sprintf(
+            '<a href="javascript:void(0)" class="oes-map-external-legend-toggle" data-map-id="%s" data-category="%s">%s %s</a>',
+            esc_attr($mapID),
+            esc_attr($key),
+            $title,
+            $iconHTML
+        );
+    }
+
+    // "All" button label
+    $allLabel = OES()->theme_labels['archive__filter__all_button'][$oes_language] ?? __('All', 'oes-map');
+
+    // Final HTML output
+    return sprintf(
+        '<div class="oes-map-legend">
+            <ul class="oes-vertical-list">
+                <li><a href="javascript:void(0)" class="oes-map-external-legend-toggle" data-map-id="%s" data-category="all">%s %s</a></li>
+                <li>%s</li>
+            </ul>
+        </div>',
+        esc_attr($mapID),
+        esc_html($allLabel),
+        $allIconsHtml,
+        implode('</li><li>', $legendItems)
+    );
 }
-
 
 /**
  * Get a category icon in a specific color.
@@ -334,7 +187,73 @@ function legend_html($args): string
  */
 function get_category_icon(string $color = '#1111111'): string
 {
-    return '<svg class="MapFilter-icon u-ml-tiny" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">' .
-        '<circle cx="25" cy="25" r="20" stroke="' . $color . '" fill="' . $color . '" fill-opacity="0.8" stroke-opacity="1" stroke-width="1"></circle>' .
+    return '<svg class="oes-map-legend-icon" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">' .
+        '<circle cx="25" cy="25" r="20" stroke="' . $color . '" fill="' . $color . '" stroke-opacity="1" stroke-width="1"></circle>' .
         '</svg>';
+}
+
+/**
+ * Generates HTML for a toggle navigation bar between a map view and a list view.
+ *
+ * This function is intended as a shortcode callback and builds a toggle UI
+ * consisting of two buttons ("Map" and "List") to allow the user to switch views.
+ *
+ * Labels can be passed in for multiple languages using keys like:
+ * - 'label_list' (default)
+ * - 'label_list_language0', 'label_list_language1', etc. (language-specific)
+ * - 'label_map' (default)
+ * - 'label_list_language0', 'label_list_language1', etc. (language-specific)
+ *
+ * The order of the buttons can be controlled via the 'list_first' argument.
+ *
+ * @param array $args {
+ *     Optional. Array of shortcode attributes.
+ *
+ *     @type string $id              The ID of the map element. Defaults to 'oes_map_1'.
+ *     @type string $label_list      Default label for the list button.
+ *     @type string $label_map       Default label for the map button.
+ *     @type string $label_list_xx   Language-specific label for list (e.g., 'label_list_language0').
+ *     @type string $label_map_xx    Language-specific label for map (e.g., 'label_map_language0').
+ *     @type bool   $list_first      Whether the list button should appear before the map button.
+ * }
+ * @return string HTML markup for the view switch toggle.
+ */
+function archive_switch_html(array $args): string
+{
+    global $oes_language;
+    $mapID = $args['id'] ?? 'oes_map_1';
+
+    $labelList = $args['label_list_' . $oes_language] ?? ($args['label_list'] ?? __('List', 'oes-map'));
+    $listToggle = sprintf(
+        '<a href="javascript:void(0)" class="oes-map-list-toggle oes-map-nav-toggle wp-element-button">%s</a>',
+        esc_html($labelList)
+    );
+
+    $labelMap = $args['label_map_' . $oes_language] ?? ($args['label_map'] ?? __('Map', 'oes-map'));
+    $mapToggle = sprintf(
+        '<a href="javascript:void(0)" class="oes-map-map-toggle oes-map-nav-toggle wp-element-button" data-map-id="%s">%s</a>',
+        esc_attr($mapID),
+        esc_html($labelMap)
+    );
+
+    $toggleMarkup = ($args['list_first'] ?? false)
+        ? ($listToggle . '</li><li>' . $mapToggle)
+        : ($mapToggle . '</li><li>' . $listToggle);
+
+    return '<div class="oes-map-nav-container">
+                <ul class="oes-map-archive-tabs-list oes-horizontal-list">
+                    <li>' . $toggleMarkup . '</li>
+                </ul>
+            </div>';
+}
+
+/**
+ * Generates HTML for a spinner that shows while filtering is processed.
+ *
+ * @param array $args Optional. Array of shortcode attributes.
+ * @return string HTML markup for a spinner.
+ */
+function spinner_html(array $args): string
+{
+    return '<div id="oes-map-loading-spinner"><div class="spinner"></div></div>';
 }

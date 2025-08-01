@@ -1,50 +1,64 @@
-# Open Encyclopedia System Plugin - Map Module
+# OES MAP Module
+Welcome to the Open Encyclopedia System (OES) Map repository on GitHub.  
+OES is a modular and configurable software platform for creating, publishing, and maintaining online encyclopedias in the humanities and social sciences. It is designed to be accessible worldwide through Open Access.
 
-Welcome to the Open Encyclopedia System Map (OES Map) repository on GitHub. OES is a modular and configurable software for creating, publishing and maintaining online encyclopedias in the humanities and social sciences that are accessible worldwide via Open Access. For more information please visit the main repository or our website.
+For more information, please visit the [main repository](https://github.com/open-encyclopedia-system) or our [website](https://open-encyclopedia-system.org).
 
-A typical OES application consists of an OES plugin and an additional OES project plugin which implements the OES features for the application. The OES Map plugin is an additional OES module to represent data on an open street map.
+A typical OES application consists of:
+- the **OES Core plugin**
+- a **project-specific OES plugin** that implements application-specific features
+- optional **OES modules**, such as this module
 
-## Documentation (Coming Soon)
+The **OES Map** plugin displays a collection of places on a map using OpenStreetMap and Leaflet.
 
-We are working on a detailed user manual and a technical function reference. Support is currently provided via our email help desk info@open-encyclopedia-system.org. We answer questions related to the OES plugin and its usage.
+## Dependencies
+This module depends on:
 
+- **OES Core**, version `2.3.3`  
+  Repository: [https://github.com/open-encyclopedia-system/oes-core](https://github.com/open-encyclopedia-system/oes-core)
 
-## Getting Started
-
-### Dependencies
-
-OES Map depends on the OES Core Plugin:
-* OES Core, version 2.3.3, URL: https://github.com/open-encyclopedia-system/oes-core.
-
-### Installation
-
-1. Download the OES plugin from gitHub and add it to your WordPress plugin directory.
-2. Download and activate the dependencies.
-3. Activate the OES plugin.
-4. Create your OES project plugin or download and activate the OES Demo plugin.
-5. (Optional) Download and activate the OES theme.
-6. Download and activate the OES map module.
-
-If the installation was successful you will now see the menu "OES Settings" and its submenu "Timeline" inside the WordPress admin interface in the navigation menu on the left. The OES Timeline module and its functionalities are now available inside your WordPress installation.
-
-You can start configuring by exploring the OES settings (documentation coming soon) or editing the model.json inside your project plugin.
+- **Advanced Custom Fields (ACF)**, version `6.3.4`  
+  Website: [https://www.advancedcustomfields.com](https://www.advancedcustomfields.com)
 
 ## Support
+This repository does **not** offer public support or issue tracking.  
+If you need help using the OES plugins, please contact our help desk:  
+**info@open-encyclopedia-system.org**
 
-This repository is not suitable for support.
+For information about available modules, customization options, or help launching your own encyclopedia, visit:  
+[https://open-encyclopedia-system.org](https://open-encyclopedia-system.org)
 
-Support is currently provided via our email help desk info@open-encyclopedia-system.org. We answer questions related to the OES plugin and its usage. For further information about online encyclopedias and possible customization please visit our [website](http://www.open-encyclopedia-system.org/).
-
+## Documentation
+The full user and technical manual is available at:  
+[https://manual.open-encyclopedia-system.org/](https://manual.open-encyclopedia-system.org/)
 
 ## Contributing
+If you are interested in contributing to OES development, please get in touch:  
+**info@open-encyclopedia-system.org**
 
-If you want to contribute to OES please contact the help desk info@open-encyclopedia-system.org.
-
+## Credits
+Developed by **Digitale Infrastrukturen**, Freie Universität Berlin (FUB IT),  
+with support from the **German Research Foundation (DFG)**.
 
 ## Licencing
+Copyright (C) 2025
+Freie Universität Berlin, FUB IT, Digitale Infrastrukturen
+This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public
+License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later
+version.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
-Copyright (C) 2024 Freie Universität Berlin, Center für Digitale Systeme an der Universitätsbibliothek
+## Roadmap
+- provide blocks
+- provide shortcode documentation for oes_map_archive_switch and oes_map_spinner
+- prepare legend via js instead of using globals.
 
-This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
+# Changelog
 
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+## 1.1.0
+- remove single block
+- Extended shortcode documentation 
+- New popup pages: Multiple objects can now be browsed within a single popup 
+- Extensible class OES\Map\Map 
+- Updated Leaflet version and other dependencies

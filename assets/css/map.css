@@ -1,0 +1,33 @@
+.oes-map-legend-icon {
+  width: 0.5rem;
+  margin-right: 3px;
+}
+
+#oes-map-loading-spinner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.6);
+  display: none;
+  z-index: 9999;
+  justify-content: center;
+  align-items: center;
+}
+#oes-map-loading-spinner .spinner {
+  border: 4px solid #ccc;
+  border-top: 4px solid #0073aa;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/*# sourceMappingURL=map.css.map */

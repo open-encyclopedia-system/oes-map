@@ -2,194 +2,334 @@
 
 namespace OES\Map;
 
-if (!defined('ABSPATH')) exit; // Exit if accessed directly
+if (!defined('ABSPATH')) exit;
 
 if (!class_exists('Entry')) :
 
     /**
-     * Class OES_Map_Entry
+     * Class Entry
      *
-     * Defines a map entry.
+     * Represents a geolocation entry used for mapping.
+     * Stores coordinates, popup information, and supports conditional rendering logic.
+     *
+     * @package OES\Map
      */
     class Entry
     {
 
-        /** @var string The post id. */
+        /** @var string WordPress post ID representing the map entry. */
         public string $entry_ID = '';
 
-        /** @var string The validated status (latitude, longitude are set) */
-        public string $status = '';
+        /** @var string ID for field values, might be post id or "taxonomy_term_ID". */
+        public string $id_for_fields = '';
 
-        /** @var string The field key for a Google map field. */
+        /** @var string WordPress taxonomy if map entry is set from term. */
+        public string $taxonomy = '';
+
+        /** @var string Status flag for the entry; 'invalid' if coordinates are missing. */
+        public string $status = 'valid';
+
+        /** @var string ACF Google Map field key. */
         public string $google_field = '';
 
-        /** @var string The latitude field */
+        /** @var string Field key for latitude. */
         public string $lat_field = '';
 
-        /** @var string The longitude field. */
+        /** @var string Field key for longitude. */
         public string $lon_field = '';
 
-        /** @var float The latitude value. */
-        public float $lat = 0;
+        /** @var float Latitude coordinate. */
+        public float $lat = 0.0;
 
-        /** @var float The longitude value. */
-        public float $lon = 0;
+        /** @var float Longitude coordinate. */
+        public float $lon = 0.0;
 
-        /** @var string The popup function. */
+        /** @var string Function name used to generate popup text. */
         public string $popup_function = '\OES\Map\popup_text';
 
-        /** @var string The popup text. */
+        /** @var string The text content to show in the map popup. */
         public string $popup_text = '';
 
-        /** @var string The popup field. */
+        /** @var string field key used to fetch popup content. */
         public string $popup_field = '';
 
-        /** @var string The icon color. Format in HTML Code. */
+        /** @var string Icon color (HTML hex code). */
         public string $color = '';
 
-        /** @var array Additional parameters. */
+        /** @var int Icon radius. */
+        public int $radius = 5;
+
+        /** @var float Icon opacity. */
+        public float $fillOpacity = 1;
+
+        /** @var array Additional, arbitrary parameters passed in. */
         public array $additional = [];
 
+        /** @var array<string, int> Holds the count of published posts connected through specific relationship fields. */
+        public array $connected_posts_count = [];
 
         /**
-         * OES_Map_Entry constructor.
+         * Entry constructor.
          *
-         * @param array $args Additional parameters.
+         * @param int $entryID WordPress post ID or term ID. Defaults to current post ID if not supplied.
+         * @param array $args Array of settings for the entry (field keys, popup function, etc.).
+         * @param array $additional_args Additional data to be stored in the entry.
          */
-        function __construct(int $post_id = 0, array $args = [], array $additional_args = [])
+        public function __construct(int $entryID = 0, array $args = [], array $additional_args = [])
         {
+            $this->entry_ID = $entryID ?: get_the_ID();
 
-            $this->entry_ID = $post_id ?: get_the_ID();
-
-            /* check if category has field condition */
-            if ($this->check_condition($args)) {
-
-                /* set class parameters */
-                foreach ($args as $key => $value) {
-                    if (property_exists($this, $key) && gettype($value) === gettype($this->{$key}))
-                        $this->{$key} = $value;
-                    else  $this->additional[$key] = $value;
+            if ($args['term'] ?? false) {
+                $term = get_term($this->entry_ID);
+                if ($term) {
+                    $this->taxonomy = $term->taxonomy;
+                    $this->id_for_fields = $this->taxonomy . '_' . $this->entry_ID;
                 }
+            } else {
+                $this->id_for_fields = $this->entry_ID;
+            }
 
-                /* make sure popup function exists */
-                if ($this->popup_function == 'none') $this->popup_function = '\OES\Map\popup_text';
+            if (!$this->check_condition($args)) {
+                $this->status = 'invalid';
+                return;
+            }
 
-                /* set additional parameters */
-                foreach ($additional_args as $key => $value) $this->additional[$key] = $value;
+            $this->initialize_properties($args, $additional_args);
+            $this->initialize_additional_properties($args, $additional_args);
+            $this->set_coordinates();
 
-                $this->set_coordinates();
+            if (empty($this->lat) || empty($this->lon)) {
+                $this->status = 'invalid';
+            }
+
+            if ($this->status != 'invalid') {
                 $this->set_popup_text();
             }
-
-            /* check if lat and lon are set */
-            if (empty($this->lat) || empty($this->lon)) $this->status = 'invalid';
         }
 
+        /**
+         * Assigns provided arguments to the class properties.
+         *
+         * @param array $args Main configuration for the entry.
+         * @param array $additional_args Any additional user-defined metadata.
+         */
+        protected function initialize_properties(array $args, array $additional_args): void
+        {
+            foreach ($args as $key => $value) {
+                if (property_exists($this, $key) && gettype($value) === gettype($this->{$key})) {
+                    $this->{$key} = $value;
+                } else {
+                    $this->additional[$key] = $value;
+                }
+            }
+
+            if ($this->popup_function === 'none') {
+                $this->popup_function = '\OES\Map\popup_text';
+            }
+        }
 
         /**
-         * Check condition for post.
+         * Assigns additional provided arguments to the class properties.
          *
-         * @param array $args The category arguments.
-         * @return bool Return true if condition is met.
+         * @param array $args Main configuration for the entry.
+         * @param array $additional_args Any additional user-defined metadata.
          */
-        function check_condition(array $args = []): bool
+        protected function initialize_additional_properties(array $args, array $additional_args): void
         {
-            /* return early if no condition is set */
-            if (empty($args['condition'] ?? '') ||
-                (!isset($args['condition']['field']) && !isset($args['condition']['value']))) return true;
+            foreach ($additional_args as $key => $value) {
+                $this->additional[$key] = $value;
+            }
+        }
 
-            $fieldKey = $args['condition']['field'] ?? false;
-            if ($fieldKey && $fieldKey != 'none') {
+        /**
+         * Checks if the entry meets the condition defined in the arguments.
+         *
+         * @param array $args Arguments that may include a `condition` array.
+         * @return bool True if the condition passes or none is defined.
+         */
+        protected function check_condition(array $args = []): bool
+        {
 
-                $fieldKey = oes_starts_with('field_field_', $fieldKey) ? substr($fieldKey, 6) : $fieldKey;
-                $fieldValue = $args['condition']['value'] ?? false;
-                $operator = $args['condition']['operator'] ?? 'equal';
+            if (empty($args['condition_field']) && empty($args['condition_value'])) {
+                return true;
+            }
 
-                if ($fieldObject = oes_get_field_object($fieldKey, $this->entry_ID)) {
-                    if ($fieldObject['type'] == 'select' &&
-                        (isset($fieldObject['multiple']) && $fieldObject['multiple'])) {
-                        $postFieldValue = oes_get_field($fieldKey, $this->entry_ID);
-                        if ($postFieldValue && in_array($fieldValue, $postFieldValue)) return ($operator !== 'notequal');
-                        else return ($operator === 'notequal');
-                    } else {
-                        $postFieldValue = get_post_meta($this->entry_ID, $fieldKey, true); //TODO other field types? oes_get_field?
-                        if ($postFieldValue == $fieldValue) return ($operator !== 'notequal');
-                        else return ($operator === 'notequal');
-                    }
-                }
+            $fieldKey = $args['condition_field'] ?? '';
+            $fieldValue = $args['condition_value'] ?? null;
+            $operator = $args['condition_operator'] ?? 'equal';
+
+            if (empty($fieldKey) || $fieldKey === 'none') {
+                return true;
+            }
+
+            $fieldObject = oes_get_field_object($fieldKey, $this->id_for_fields);
+            if (!$fieldObject) {
                 return false;
             }
-            return true;
+
+            if ($fieldObject['type'] === 'select' && !empty($fieldObject['multiple'])) {
+                $postFieldValue = oes_get_field($fieldKey, $this->id_for_fields);
+                return in_array($fieldValue, (array)$postFieldValue, true) === ($operator !== 'notequal');
+            }
+
+            $postFieldValue = get_post_meta($this->id_for_fields, $fieldKey, true);
+            return ($postFieldValue == $fieldValue) === ($operator !== 'notequal');
         }
 
+        /**
+         * Populates `$lat` and `$lon` from defined field keys or a Google Map field.
+         */
+        protected function set_coordinates(): void
+        {
+            $this->lat = $this->get_coordinate_value($this->lat_field);
+            $this->lon = $this->get_coordinate_value($this->lon_field);
+
+            if (!$this->lat || !$this->lon) {
+                $this->set_coordinates_from_google_field();
+            }
+        }
 
         /**
-         * Set coordinates
+         * Extracts a float coordinate value from a given field key.
+         *
+         * @param string $fieldKey field key.
+         * @return float Coordinate value.
          */
-        function set_coordinates(): void
+        protected function get_coordinate_value(string $fieldKey): float
         {
-            /* latitude */
-            $latitudeField = oes_starts_with($this->lat_field, 'field_field_') ?
-                substr($this->lat_field, 6) :
-                $this->lat_field;
-            if (!empty($latitudeField) && $latitudeField !== 'none') {
-                $fieldValue = oes_get_field($latitudeField, $this->entry_ID);
-                if ($lat = (float)$fieldValue) $this->lat = $lat;
+            if (empty($fieldKey) || $fieldKey === 'none') {
+                return 0.0;
             }
 
-            /* longitude */
-            $longitudeField = oes_starts_with($this->lon_field, 'field_field') ?
-                substr($this->lon_field, 6) :
-                $this->lon_field;
-            if (!empty($longitudeField) && $longitudeField !== 'none') {
-                $fieldValue = oes_get_field($longitudeField, $this->entry_ID);
-                if ($lon = (float)$fieldValue) $this->lon = $lon;
+            $value = oes_get_field($fieldKey, $this->id_for_fields);
+            return is_numeric($value) ? (float)$value : 0.0;
+        }
+
+        /**
+         * Attempts to extract coordinates from an ACF Google Map field if lat/lon are not manually set.
+         */
+        protected function set_coordinates_from_google_field(): void
+        {
+            $googleFieldKey = $this->google_field;
+            if (empty($googleFieldKey) || $googleFieldKey === 'none') {
+                return;
             }
 
-            /* check for Google field */
-            if ((empty($this->lon) || empty($this->lat)) &&
-                !empty($this->google_field) && $this->google_field !== 'none') {
-                $googleFieldKey = oes_starts_with($this->google_field, 'field_field_') ?
-                    substr($this->google_field, 6) :
-                    $this->google_field;
-                $googleField = oes_get_field($googleFieldKey, $this->entry_ID);
-                if (!empty($googleField['lat']) && !empty($googleField['lng'])) {
-                    $this->lat = (float)$googleField['lat'];
-                    $this->lon = (float)$googleField['lng'];
+            $googleField = oes_get_field($googleFieldKey, $this->id_for_fields);
+            if (!empty($googleField['lat']) && !empty($googleField['lng'])) {
+                $this->lat = (float)$googleField['lat'];
+                $this->lon = (float)$googleField['lng'];
+            }
+        }
+
+        /**
+         * Determines the popup text content using a function or field.
+         * Falls back to a default function if none is set.
+         * Applies filter `oes_map/popup_text`.
+         */
+        protected function set_popup_text(): void
+        {
+            if (empty($this->popup_function) && empty($this->popup_field)) {
+                $this->popup_text = \OES\Map\popup_text($this->entry_ID, $this->popup_text);
+            } elseif (function_exists($this->popup_function)) {
+                $this->popup_text = call_user_func($this->popup_function, $this->entry_ID, $this->popup_text);
+            } else {
+                $this->popup_text = \OES\ACF\get_field_display_value($this->popup_field, $this->entry_ID);
+            }
+
+            if (has_filter('oes_map/popup_text')) {
+                $this->popup_text = apply_filters('oes_map/popup_text', $this);
+            }
+        }
+
+        /**
+         * Generates HTML for paginated popup content, displaying one page at a time,
+         * along with optional additional content and navigation controls.
+         *
+         * @param array $pages       Array of HTML strings, each representing one popup page.
+         * @param string $additional Optional additional HTML content to append below the pages (e.g., location).
+         * @return string            Complete HTML string for the popup with pagination.
+         */
+        protected function set_popup_pages(array $pages, string $additional = ''): string
+        {
+            $html = '<div class="popup-wrapper">';
+
+            foreach ($pages as $i => $page) {
+                $displayStyle = $i === 0 ? '' : 'style="display:none;"';
+                $pageNumber = esc_attr($i);
+                $html .= "<div class='popup-page' data-page='{$pageNumber}' {$displayStyle}>{$page}</div>";
+            }
+
+            if (!empty($additional)) {
+                $html .= $additional;
+            }
+
+            $html .= $this->get_popup_pages_navigation(count($pages));
+            $html .= '</div>';
+
+            return $html;
+        }
+
+        /**
+         * Builds navigation controls for paginated popup content.
+         *
+         * @param int $totalPages The total number of popup pages.
+         * @return string         HTML for previous/next navigation with page indicators.
+         */
+        protected function get_popup_pages_navigation(int $totalPages = 0): string
+        {
+            if ($totalPages < 2) {
+                return '';
+            }
+
+            $total = esc_html($totalPages);
+            $iconLeft = $this->get_icon('arrow_left');
+            $iconRight = $this->get_icon('arrow_right');
+
+            return <<<HTML
+<div class="navigation pagination bak-project-navigation" role="navigation" aria-label="Pagination">
+    <div class="nav-links">
+        <a href="javascript:void(0);" class="page-numbers prev" onclick="oesMapPageNav(this, -1)" aria-label="Previous page">
+            <span class="screen-reader-text">Previous</span> {$iconLeft}
+</svg>
+        </a>
+        <span class="page-numbers current">1 / {$total}</span>
+        <a href="javascript:void(0);" class="page-numbers next" onclick="oesMapPageNav(this, 1)" aria-label="Next page">
+            <span class="screen-reader-text">Next</span> {$iconRight}
+            <i class="fa fa-arrow-right"></i>
+        </a>
+    </div>
+</div>
+HTML;
+        }
+
+        /**
+         * Wrapper for global icon access.
+         */
+        public function get_icon(string $name = ''): string {
+            return \OES\Icon\get($name);
+        }
+
+        /**
+         * Sets the count of connected published posts for specified fields.
+         *
+         * @param array $fieldKeys Array of field keys to evaluate.
+         * @param array $status Array of considered status.
+         * @return void
+         */
+        public function set_connected_posts_count(array $fieldKeys = [], array $status = ['publish']): void
+        {
+            foreach ($fieldKeys as $fieldKey) {
+                $connectedEntries = get_field($fieldKey, $this->entry_ID);
+
+                if (empty($connectedEntries)) {
+                    $this->connected_posts_count[$fieldKey] = 0;
+                } else {
+                    $this->connected_posts_count[$fieldKey] = count(array_filter($connectedEntries, function ($singlePost) use ($status) {
+                        return in_array(get_post_status($singlePost), $status);
+                    }));
                 }
             }
-        }
-
-
-        /**
-         * Set popup text (might be overwritten)
-         */
-        function set_popup_text(): void
-        {
-
-            /* on empty call default popup function*/
-            if(empty($this->popup_function) && empty($this->popup_field))
-                $this->popup_text = \OES\Map\popup_text($this->entry_ID, $this->popup_text);
-
-            /* call popup function */
-           else if (function_exists($this->popup_function))
-                $this->popup_text = call_user_func($this->popup_function, $this->entry_ID, $this->popup_text);
-
-            /* popup text is field */
-            else
-                $this->popup_text = \OES\ACF\get_field_display_value((
-                oes_starts_with($this->popup_field, 'field_field_') ?
-                    substr($this->popup_field, 6) :
-                    $this->popup_field
-                ), $this->entry_ID);
-
-
-            /**
-             * Filter the popup text.
-             *
-             * @param string $this The OES map entry instance.
-             */
-            if (has_filter('oes_map/popup_text')) $this->popup_text = apply_filters('oes_map/popup_text', $this);
         }
     }
 endif;
