@@ -31,6 +31,7 @@
             fitBounds: false,
             showBorders: true,
             defaultZoom: 5,
+            maxZoom: 18,
             defaultCenter: [51.1657, 10.4515],
             map_id: elementName,
             layer_files: [] // GeoJSON files for borders
@@ -58,7 +59,7 @@
             center: oesMap.settings[elementName]?.center || options.defaultCenter,
             zoom: oesMap.settings[elementName]?.zoom || options.defaultZoom,
             layers: [tileLayer],
-            maxZoom: 18,
+            maxZoom: oesMap.settings[elementName]?.maxzoom || options.maxZoom,
             scrollWheelZoom: false
         });
     }

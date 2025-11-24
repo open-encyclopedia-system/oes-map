@@ -29,6 +29,7 @@ if (!class_exists('Map')) :
             'fitBounds' => false,
             'showBorders' => true,
             'defaultZoom' => 5,
+            'maxZoom' => 18,
             'defaultCenter' => [51.1657, 10.4515],
         ];
 
@@ -73,7 +74,10 @@ if (!class_exists('Map')) :
             $this->set_entry_class();
             $this->set_data($args);
 
-            add_action('wp_footer', [$this, 'footer']);
+            $skipAction = $args['skip_action'] ?? false;
+            if(!$skipAction) {
+                add_action('wp_footer', [$this, 'footer']);
+            }
         }
 
         /**
@@ -113,15 +117,15 @@ if (!class_exists('Map')) :
 
             // Check for any other known options
             foreach ($args['options'] ?? [] as $key => $defaultValue) {
-                if (array_key_exists($key, $args)) {
-                    $this->options[$key] = $args[$key];
+                if (array_key_exists($key, $this->options)) {
+                    $this->options[$key] = $args['options'][$key];
                 }
             }
 
             // Check for div parameters
             foreach ($args['div'] ?? [] as $key => $defaultValue) {
-                if (array_key_exists($key, $args)) {
-                    $this->div[$key] = $args[$key];
+                if (array_key_exists($key, $this->div)) {
+                    $this->div[$key] = $args['options'][$key];
                 }
             }
         }

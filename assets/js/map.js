@@ -52,6 +52,7 @@ document.addEventListener('click', function (event) {
     if (el.matches('.oes-map-external-legend-toggle')) {
         const mapID = el.dataset.mapId;
         const category = el.dataset.category;
+        el.classList.toggle('selected');
         oesMapExternalLegend(mapID, category);
         return;
     }

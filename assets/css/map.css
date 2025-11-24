@@ -3,6 +3,11 @@
   margin-right: 3px;
 }
 
+.oes-map-external-legend-toggle.selected:not([data-category=all]) {
+  color: var(--wp--preset--color--inactive);
+  text-decoration: none;
+}
+
 #oes-map-loading-spinner {
   position: fixed;
   top: 0;
@@ -22,6 +27,13 @@
   width: 40px;
   height: 40px;
   animation: spin 1s linear infinite;
+}
+
+.nav-links {
+  display: inline-flex;
+}
+.nav-links .page-numbers.current {
+  padding-top: 5px;
 }
 
 @keyframes spin {

@@ -85,11 +85,14 @@ function enqueue_map_scripts(): void
     wp_register_script('leaflet.panel-layers', OES_MAP_PLUGIN_URL . 'leaflet/leaflet-panel-layers/leaflet-panel-layers.min.js', ['leaflet'], '1.2.6');
     wp_enqueue_script('leaflet.panel-layers');
 
-    wp_register_script('oes-map.leaflet', OES_MAP_PLUGIN_URL . 'assets/js/leaflet.js');
+    wp_register_script('oes-map.leaflet', OES_MAP_PLUGIN_URL . 'assets/js/leaflet.min.js');
     wp_enqueue_script('oes-map.leaflet');
 
     wp_register_script('oes-map', OES_MAP_PLUGIN_URL . 'assets/js/map.min.js', [], false, true);
     wp_enqueue_script('oes-map');
+
+    wp_register_script('oes-map.filter', OES_MAP_PLUGIN_URL . 'assets/js/map-filter.min.js', [], false, true);
+    wp_enqueue_script('oes-map.filter');
 
     // Styles
 

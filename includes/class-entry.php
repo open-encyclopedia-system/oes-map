@@ -201,7 +201,7 @@ if (!class_exists('Entry')) :
                 return 0.0;
             }
 
-            $value = oes_get_field($fieldKey, $this->id_for_fields);
+            $value = str_replace(',', '.', oes_get_field($fieldKey, $this->id_for_fields));
             return is_numeric($value) ? (float)$value : 0.0;
         }
 
@@ -254,8 +254,9 @@ if (!class_exists('Entry')) :
         {
             $html = '<div class="popup-wrapper">';
 
+            $firstPageKey = array_key_first($pages);
             foreach ($pages as $i => $page) {
-                $displayStyle = $i === 0 ? '' : 'style="display:none;"';
+                $displayStyle = $i === $firstPageKey ? '' : 'style="display:none;"';
                 $pageNumber = esc_attr($i);
                 $html .= "<div class='popup-page' data-page='{$pageNumber}' {$displayStyle}>{$page}</div>";
             }
