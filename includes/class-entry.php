@@ -157,22 +157,23 @@ if (!class_exists('Entry')) :
             $fieldKey = $args['condition_field'] ?? '';
             $fieldValue = $args['condition_value'] ?? null;
             $operator = $args['condition_operator'] ?? 'equal';
+            $postID = $args['id'] ?? $this->id_for_fields;
 
             if (empty($fieldKey) || $fieldKey === 'none') {
                 return true;
             }
 
-            $fieldObject = oes_get_field_object($fieldKey, $this->id_for_fields);
+            $fieldObject = oes_get_field_object($fieldKey, $postID);
             if (!$fieldObject) {
                 return false;
             }
 
             if ($fieldObject['type'] === 'select' && !empty($fieldObject['multiple'])) {
-                $postFieldValue = oes_get_field($fieldKey, $this->id_for_fields);
+                $postFieldValue = oes_get_field($fieldKey, $postID);
                 return in_array($fieldValue, (array)$postFieldValue, true) === ($operator !== 'notequal');
             }
 
-            $postFieldValue = get_post_meta($this->id_for_fields, $fieldKey, true);
+            $postFieldValue = get_post_meta($postID, $fieldKey, true);
             return ($postFieldValue == $fieldValue) === ($operator !== 'notequal');
         }
 

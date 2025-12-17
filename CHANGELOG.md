@@ -1,6 +1,9 @@
 
 # Changelog
 
+## 1.1.2 (in development)
+- Improved: pass entry ID to \OES\Map\Entry
+
 ## 1.1.1
 - New: option "maxZoom"
 - New: OES archive filter logic
