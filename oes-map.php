@@ -50,19 +50,16 @@ add_action('oes/plugins_loaded', function () {
         return;
     }
 
-    // Includes
     include_once __DIR__ . '/includes/constants.php';
     include_once __DIR__ . '/includes/functions.php';
     include_once __DIR__ . '/includes/class-map.php';
     include_once __DIR__ . '/includes/class-entry.php';
 
-    // Shortcode admin page
     if (is_admin()) {
         include_once __DIR__ . '/includes/admin/class-tool-shortcode_map.php';
         include_once __DIR__ . '/includes/admin/class-module_page.php';
     }
 
-    // Hook into OES Core and WordPress
     add_action('wp_enqueue_scripts', __NAMESPACE__ . '\\enqueue_scripts');
 
     // Shortcodes @oesDevelopment make this into blocks
@@ -73,7 +70,6 @@ add_action('oes/plugins_loaded', function () {
     add_shortcode('oes_map_archive_switch', __NAMESPACE__ . '\\archive_switch_html');
     add_shortcode('oes_map_spinner', __NAMESPACE__ . '\\spinner_html');
 
-    // Custom action to allow extension
     do_action('oes/map_plugin_loaded');
 
 }, 12);

@@ -32,7 +32,7 @@ function html(array $args): string
         return '';
     }
 
-    $class = oes_get_project_class_name('\OES\Map\Map', '\OES\Map');
+    $class = oes_get_application_class_name('\OES\Map\Map', '\OES\Map');
     $oesMap = new $class($args);
 
     // Update global state with map categories and ID

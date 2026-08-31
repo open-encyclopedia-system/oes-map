@@ -128,6 +128,15 @@ if (!class_exists('Map')) :
                     $this->div[$key] = $args['options'][$key];
                 }
             }
+
+            //@legacy
+            if(isset($args['height'])){
+                $this->div['height'] = $args['height'];
+            }
+
+            if(isset($args['width'])){
+                $this->div['width'] = $args['width'];
+            }
         }
 
         /**
@@ -201,7 +210,7 @@ if (!class_exists('Map')) :
          */
         protected function set_entry_class(): void
         {
-            $class = oes_get_project_class_name('\OES\Map\Entry');
+            $class = oes_get_application_class_name('\OES\Map\Entry');
             $this->entry_class = $class;
         }
 
