@@ -1,7 +1,9 @@
-
 # Changelog
 
-## 1.1.2 (in development)
+## 1.2.0
+- compatible with OES 3.0.0
+
+## 1.1.2
 - Improved: pass entry ID to \OES\Map\Entry
 
 ## 1.1.1

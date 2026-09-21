@@ -9,13 +9,12 @@ namespace OES\MAP;
  * Plugin Name:        OES Map (OES Core Module)
  * Plugin URI:         https://www.open-encyclopedia-system.org/
  * Description:        Display a collection of places on a map using OpenStreetMap and Leaflet. Requires OES Core to function.
- * Version:            1.1.2
- * Author:             Maren Welterlich-Strobl, Freie Universität Berlin, FUB-IT
- * Author URI:         https://www.it.fu-berlin.de/die-fub-it/mitarbeitende/mstrobl.html
+ * Version:            1.2.0
+ * Author:             Maren Welterlich-Strobl, Freie Universität Berlin, FUB-IT, Digitale Forschungsinfrastrukturen
+ * Author URI:         https://www.fu-berlin.de/
  * Requires at least:  6.5
  * Tested up to:       6.8.2
  * Requires PHP:       8.1
- * Tags:               oes, map, leaflet, openstreetmap, geolocation, plugin-addon, encyclopedia
  * License:            GPLv2 or later
  * License URI:        https://www.gnu.org/licenses/gpl-2.0.html
  *
