@@ -6,11 +6,19 @@ vocabulary for describing individual contributions to a scholarly or software ou
 **Name:** Maren Welterlich-Strobl, Freie Universität Berlin, FUB-IT, Digitale Forschungsinfrastrukturen
 **Roles (CRediT):** Software, Writing – original draft, Writing – review & editing
 
-This plugin is developed and maintained by Maren Welterlich-Strobl.
+## Third-Party Code
 
-## Inspiration and Third-Party Code
+### Leaflet
+- **Website**: https://leafletjs.com/
+- **License**: BSD 2-Clause License
+- **Description**: Open-source JavaScript library for interactive maps
+- **Roles (CRediT)**: Software (integration), Documentation (integration)
 
-The design of OES Map uses code from [leaflet](https://leafletjs.com/).
+### OpenStreetMap
+- **Website**: https://www.openstreetmap.org/
+- **License**: Open Database License (ODbL)
+- **Description**: Collaborative project to create a free editable map of the world
+- **Roles (CRediT)**: Data source, Documentation (integration)
 
 ---
 

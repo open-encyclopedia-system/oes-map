@@ -206,7 +206,7 @@ if (!class_exists('Map')) :
         }
 
         /**
-         * Determine the entry class to use based on the project name.
+         * Determine the entry class to use based on the application name.
          */
         protected function set_entry_class(): void
         {

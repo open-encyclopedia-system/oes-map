@@ -43,7 +43,7 @@ $tabs = ['shortcode' => __('Shortcode', 'oes'), 'shortcode_editor' => __('Editor
             </p>
             <p><?php
                 _e('The shortcode will look something like this (everything in curly brackets depends on the ' .
-                    'project data model and can be configured):', 'oes-map');
+                    'application data model and can be configured):', 'oes-map');
                 ?>
             </p>
             <code>
