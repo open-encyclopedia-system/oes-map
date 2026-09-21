@@ -27,10 +27,10 @@ if (!class_exists('Map_Module_Page')) :
                 'id' => 'oes_map_class',
                 'title' => 'Custom Class',
                 'content' => '<p>' .
-                    sprintf(__('For advanced users or developers with access to the project plugin, it is possible to further ' .
-                        'customize the data and parameters by implementing a project-specific class. The corresponding file ' .
+                    sprintf(__('For advanced users or developers with access to the application plugin, it is possible to further ' .
+                        'customize the data and parameters by implementing a application-specific class. The corresponding file ' .
                         'must be named %s.', 'oes-map'),
-                        '<code>class_[projectname_without_oes_and_using_underscores_instead_of_hyphens]_map_entry.php</code>') .
+                        '<code>class_[applicationname_without_oes_and_using_underscores_instead_of_hyphens]_map_entry.php</code>') .
                     '</p>'
             ]);
 
