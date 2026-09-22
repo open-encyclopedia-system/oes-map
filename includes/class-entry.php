@@ -289,7 +289,7 @@ if (!class_exists('Entry')) :
             $iconRight = $this->get_icon('arrow_right');
 
             return <<<HTML
-<div class="navigation pagination bak-project-navigation" role="navigation" aria-label="Pagination">
+<div class="navigation pagination" role="navigation" aria-label="Pagination">
     <div class="nav-links">
         <a href="javascript:void(0);" class="page-numbers prev" onclick="oesMapPageNav(this, -1)" aria-label="Previous page">
             <span class="screen-reader-text">Previous</span> {$iconLeft}
